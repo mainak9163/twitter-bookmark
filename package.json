@@ -1,0 +1,20 @@
+{
+  "name": "twitter-bookmark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+      "build": "tsc",
+"start": "npm run build && electron .",
+   "test": "npm run build && node dist/parseLink.test.js && node dist/fetcher.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "electron": "^45.4.1",
+    "typescript": "^7.0.2"
+  }
+}

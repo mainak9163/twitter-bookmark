@@ -1,0 +1,22 @@
+{
+  "status": {
+    "id": "2118308539424985232",
+    "url": "https://x.com/GetTheFabulous/status/2118308539424985232",
+    "text": "Morning can be your favorite part of the day!",
+    "created_timestamp": 1793879086,
+    "author": { "screen_name": "GetTheFabulous", "name": "The Fabulous" },
+    "media": {
+      "all": [
+        {
+          "type": "video",
+          "url": "https://video.twimg.com/amplify_video/2118308488724049920/vid/avc1/720x1280/w-S4Zme_UnqJ2mi2.mp4?tag=14",
+          "thumbnail_url": "https://pbs.twimg.com/amplify_video_thumb/2118308488724049920/img/CRGY1DTQMCBI8Hcy.jpg",
+          "duration": 12.2,
+          "width": 1080,
+          "height": 1920
+        }
+      ]
+    }
+  },
+  "code": 200
+}
