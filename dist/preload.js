@@ -17,5 +17,11 @@ electron_1.contextBridge.exposeInMainWorld('api', {
     restorePost: (tweetId) => electron_1.ipcRenderer.invoke('restore-post', tweetId),
     purgeTrash: (tweetId) => electron_1.ipcRenderer.invoke('purge-trash', tweetId),
     copyText: (text) => electron_1.ipcRenderer.send('copy-text', text),
+    // Automatic updates: told when a new version has downloaded; installUpdate restarts into it.
+    onUpdateReady: (callback) => {
+        electron_1.ipcRenderer.on('update-ready', (_event, version) => callback(version));
+    },
+    pendingUpdate: () => electron_1.ipcRenderer.invoke('pending-update'),
+    installUpdate: () => electron_1.ipcRenderer.send('install-update'),
     savePostMeta: (tweetId, meta) => electron_1.ipcRenderer.invoke('save-post-meta', tweetId, meta),
 });

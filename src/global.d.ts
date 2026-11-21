@@ -91,6 +91,9 @@ interface Window {
     restorePost(tweetId: string): Promise<void>;
     purgeTrash(tweetId: string): Promise<void>;
     copyText(text: string): void;
+    onUpdateReady(callback: (version: string) => void): void;
+    pendingUpdate(): Promise<string | null>;
+    installUpdate(): void;
     savePostMeta(tweetId: string, meta: PostMeta): Promise<void>;
   };
 }

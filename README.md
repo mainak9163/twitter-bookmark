@@ -76,46 +76,48 @@ What the walkthrough shows:
 
 ---
 
-## Install
+## Install (Windows)
 
-Ready-made installers aren't available yet, so for now you run the app from its source code. It takes about five minutes and works on Windows, macOS and Linux.
+1. Open the [**Releases page**](https://github.com/mainak9163/twitter-bookmark/releases/latest) and download **`Tweet-Archive-Setup-<version>.exe`**.
+2. Double-click the file you downloaded.
+3. Windows may show **"Windows protected your PC"**. Click **More info**, then **Run anyway**.<br />
+   <sub>This happens because the installer isn't signed with a paid code-signing certificate yet. The app is the same either way.</sub>
+4. Click **Next**, choose where to install it (or keep the default), then click **Install**.
 
-### 1. Install the requirements
+Tweet Archive is added to the **Start menu** and your **desktop**. Installing doesn't need administrator rights.
 
-- **Node.js 22 or newer** (it includes `npm`; the app is developed on Node 24). Download it from [nodejs.org](https://nodejs.org/) and choose the LTS version.
-- **Git**, to download the code. Get it from [git-scm.com](https://git-scm.com/downloads). Alternatively, use **Code → Download ZIP** on the GitHub page and unzip the folder.
+### Updates
 
-To check that Node.js is installed, open a terminal and run:
+Updates install themselves. The app checks for new versions in the background. When one has downloaded, it shows **"Restart to update"**. If you ignore the message, the update installs the next time you close the app.
 
-```bash
-node --version   # should print v22 or higher
-```
+### Uninstall
 
-### 2. Download and start the app
+Go to **Settings → Apps → Installed apps → Tweet Archive → Uninstall**.<br />
+Your saved posts are **kept**. They live in a separate folder (see [Where your data is stored](#where-your-data-is-stored)), so reinstalling brings them all back.
 
-```bash
-git clone https://github.com/mainak9163/twitter-bookmark.git
-cd twitter-bookmark
-npm install
-npm start
-```
+### macOS and Linux
 
-`npm install` downloads Electron (about 100 MB) the first time. `npm start` compiles the app and opens its window.
+There are no installers for macOS or Linux yet. Run the app from source instead (see below).
 
-### 3. Open it again later
+---
 
-Open a terminal in the `twitter-bookmark` folder and run `npm start`.
+## Run from source
 
-> **Windows tip:** to start the app without typing a command, create a shortcut whose target is
-> `cmd /c "cd /d C:\path\to\twitter-bookmark && npm start"`.
+For developers, and for macOS and Linux.
 
-### Update to the latest version
+1. Install **[Node.js](https://nodejs.org/) 22 or newer** (LTS; the app is developed on Node 24) and **[Git](https://git-scm.com/downloads)**.
+2. Download and start the app:
 
-```bash
-git pull
-npm install
-npm start
-```
+   ```bash
+   git clone https://github.com/mainak9163/twitter-bookmark.git
+   cd twitter-bookmark
+   npm install
+   npm start
+   ```
+
+   `npm install` downloads Electron (about 100 MB) the first time. `npm start` compiles the app and opens it.
+
+To update, run `git pull`, then `npm install` and `npm start`.
 
 ---
 
@@ -185,6 +187,7 @@ Nothing else leaves your computer.
 | Part | Built with |
 |---|---|
 | Desktop shell | [Electron](https://www.electronjs.org/) 45, with a hidden title bar and native window controls drawn over the app's own top bar |
+| Installer and updates | [electron-builder](https://www.electron.build/) (NSIS installer) and [electron-updater](https://www.electron.build/auto-update), using GitHub Releases |
 | Language | [TypeScript](https://www.typescriptlang.org/), compiled with `tsc` (no bundler) |
 | Interface | Plain DOM and CSS, no framework. Hash-based routing, native `<dialog>` for modals, and one set of SVG icons. |
 | Styling | Hand-written CSS with design tokens (custom properties), a dark theme and reduced-motion support |
@@ -217,7 +220,19 @@ public/
 npm run build   # compile TypeScript into dist/
 npm start       # build and launch the app
 npm test        # build and run the link-parser and fetcher tests
+npm run dist    # build the Windows installer into release/
 ```
+
+### Releasing a new version
+
+Releases are built and published by GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)):
+
+```bash
+npm version patch          # 1.0.0 -> 1.0.1, and creates the tag v1.0.1
+git push --follow-tags     # the workflow builds the installer and publishes the Release
+```
+
+Installed copies find the new Release on their own and update.
 
 ---
 
@@ -226,7 +241,8 @@ npm test        # build and run the link-parser and fetcher tests
 - **Public posts only.** Private and deleted posts can't be fetched.
 - **Some videos can't be saved.** Videos that X only streams (as `.m3u8` playlists) can't be stored as a single file. The post shows a link to the original instead.
 - **Depends on FxTwitter.** If that service is down or changes, saving new posts stops working until it's back. Posts you've already saved aren't affected.
-- **Tested on Windows 11.** The app should also run on macOS and Linux, but those haven't been tested as much.
+- **Windows installer only.** On macOS and Linux, run the app from source. Those systems haven't been tested as much.
+- **The installer isn't code-signed yet**, so Windows shows a one-time "unknown publisher" warning.
 
 ## Disclaimer
 

@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('api', {
   restorePost: (tweetId: string): Promise<void> => ipcRenderer.invoke('restore-post', tweetId),
   purgeTrash: (tweetId: string): Promise<void> => ipcRenderer.invoke('purge-trash', tweetId),
   copyText: (text: string): void => ipcRenderer.send('copy-text', text),
+  // Automatic updates: told when a new version has downloaded; installUpdate restarts into it.
+  onUpdateReady: (callback: (version: string) => void): void => {
+    ipcRenderer.on('update-ready', (_event, version: string) => callback(version));
+  },
+  pendingUpdate: (): Promise<string | null> => ipcRenderer.invoke('pending-update'),
+  installUpdate: (): void => ipcRenderer.send('install-update'),
   savePostMeta: (tweetId: string, meta: PostMeta): Promise<void> =>
     ipcRenderer.invoke('save-post-meta', tweetId, meta),
 });

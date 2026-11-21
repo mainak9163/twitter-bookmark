@@ -10,7 +10,53 @@ const storage_1 = require("./storage");
 const parseLink_1 = require("./parseLink");
 const media_1 = require("./media");
 const screenshot_1 = require("./screenshot");
+const electron_updater_1 = require("electron-updater");
+// Keep data in %APPDATA%\twitter-bookmark (the package name). The installed app is
+// named "Tweet Archive", which would otherwise move it to %APPDATA%\Tweet Archive
+// and make every existing archive look empty after installing.
+// TWEET_ARCHIVE_USER_DATA overrides it (test scripts use a scratch copy).
+electron_1.app.setPath('userData', process.env.TWEET_ARCHIVE_USER_DATA || node_path_1.default.join(electron_1.app.getPath('appData'), 'twitter-bookmark'));
+if (process.platform === 'win32')
+    electron_1.app.setAppUserModelId('com.mainak9163.tweetarchive');
 const archiveDir = () => node_path_1.default.join(electron_1.app.getPath('userData'), 'archive');
+// One running copy at a time: opening it again focuses the existing window
+// instead of starting a second app that writes to the same files.
+const isFirstInstance = electron_1.app.requestSingleInstanceLock();
+if (!isFirstInstance)
+    electron_1.app.quit();
+electron_1.app.on('second-instance', () => {
+    const win = electron_1.BrowserWindow.getAllWindows()[0];
+    if (!win)
+        return;
+    if (win.isMinimized())
+        win.restore();
+    win.focus();
+});
+// ---------- Automatic updates (installed app only) ----------
+// Checks GitHub Releases, downloads in the background, and installs when the
+// user clicks "Restart" in the app, or otherwise the next time the app closes.
+let readyUpdateVersion = null;
+function setUpAutoUpdates() {
+    if (!electron_1.app.isPackaged)
+        return; // `npm start` never updates itself
+    electron_updater_1.autoUpdater.autoDownload = true;
+    electron_updater_1.autoUpdater.autoInstallOnAppQuit = true;
+    electron_updater_1.autoUpdater.on('update-downloaded', (info) => {
+        readyUpdateVersion = info.version;
+        for (const win of electron_1.BrowserWindow.getAllWindows())
+            win.webContents.send('update-ready', info.version);
+    });
+    // Offline, GitHub unreachable, no releases yet: try again later, never bother the user.
+    electron_updater_1.autoUpdater.on('error', (error) => console.error('Update check failed:', error?.message ?? error));
+    const check = () => electron_updater_1.autoUpdater.checkForUpdates().catch(() => undefined);
+    check();
+    setInterval(check, 6 * 60 * 60 * 1000);
+}
+electron_1.ipcMain.handle('pending-update', () => readyUpdateVersion);
+electron_1.ipcMain.on('install-update', () => {
+    if (readyUpdateVersion)
+        electron_updater_1.autoUpdater.quitAndInstall(true, true); // silent install, then reopen
+});
 function createWindow() {
     const isMac = process.platform === 'darwin';
     const win = new electron_1.BrowserWindow({
@@ -108,9 +154,12 @@ electron_1.ipcMain.on('copy-text', (_event, text) => {
 });
 electron_1.ipcMain.handle('save-post-meta', (_event, tweetId, meta) => (0, storage_1.savePostMeta)(archiveDir(), tweetId, meta));
 electron_1.app.whenReady().then(() => {
+    if (!isFirstInstance)
+        return; // quitting: another copy is already open
     // Posts deleted last session whose undo window never finished.
     (0, storage_1.purgeTrash)(archiveDir()).catch((error) => console.error('Could not empty trash:', error));
     createWindow();
+    setUpAutoUpdates();
     // macOS: clicking the dock icon with no windows open should reopen one
     electron_1.app.on('activate', () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0)

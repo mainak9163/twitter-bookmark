@@ -1910,5 +1910,17 @@
 
   window.addEventListener('hashchange', () => render());
 
+  // A new version has downloaded in the background (installed app only).
+  // If the prompt is missed, the update still installs the next time the app closes.
+  const announceUpdate = (version: string) =>
+    showToast(`Tweet Archive ${version} is ready`, false, false, {
+      label: 'Restart to update',
+      run: () => window.api.installUpdate(),
+    });
+  window.api.onUpdateReady(announceUpdate);
+  window.api.pendingUpdate().then((version) => {
+    if (version) announceUpdate(version);
+  });
+
   render();
 })();

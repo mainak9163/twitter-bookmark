@@ -1,20 +1,64 @@
 {
   "name": "twitter-bookmark",
+  "productName": "Tweet Archive",
   "version": "1.0.0",
-  "description": "",
+  "description": "Save posts from X (Twitter) to your computer and sort them into folders.",
   "main": "dist/main.js",
   "scripts": {
-      "build": "tsc",
-"start": "npm run build && electron .",
-   "test": "npm run build && node dist/parseLink.test.js && node dist/fetcher.test.js"
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "test": "npm run build && node dist/parseLink.test.js && node dist/fetcher.test.js",
+    "dist": "npm run build && electron-builder --win --publish never",
+    "release": "npm run build && electron-builder --win --publish always"
   },
   "keywords": [],
-  "author": "",
+  "author": "Mainak Mukherjee",
   "license": "ISC",
   "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mainak9163/twitter-bookmark.git"
+  },
+  "build": {
+    "appId": "com.mainak9163.tweetarchive",
+    "productName": "Tweet Archive",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "!dist/**/*.test.js",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tweet Archive",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Tweet-Archive-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "mainak9163",
+      "repo": "twitter-bookmark",
+      "releaseType": "release"
+    }
+  },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }
