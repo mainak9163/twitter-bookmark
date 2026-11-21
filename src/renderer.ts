@@ -1,7 +1,7 @@
 (() => {
   const linkInput = document.getElementById('link-input') as HTMLInputElement;
   const saveButton = document.getElementById('save-button') as HTMLButtonElement;
-  const statusText = document.getElementById('status-text') as HTMLParagraphElement;
+  const toast = document.getElementById('toast') as HTMLDivElement;
   const postList = document.getElementById('post-list') as HTMLDivElement;
   const folderName = document.getElementById('folder-name') as HTMLInputElement;
   const folderDesc = document.getElementById('folder-desc') as HTMLInputElement;
@@ -9,15 +9,27 @@
   const folderList = document.getElementById('folder-list') as HTMLUListElement;
   const searchInput = document.getElementById('search-input') as HTMLInputElement;
   const filterFolder = document.getElementById('filter-folder') as HTMLSelectElement;
-  let allPosts: PostSummary[] = [];
 
   let folders: Folder[] = [];
+  let allPosts: PostSummary[] = [];
+  let toastTimer: number | undefined;
 
-    function renderFilterOptions(): void {
+  function showToast(message: string, isError = false, autoHide = true): void {
+    toast.textContent = message;
+    toast.className = isError ? 'toast toast-error' : 'toast';
+    toast.hidden = false;
+    window.clearTimeout(toastTimer);
+    if (autoHide) {
+      toastTimer = window.setTimeout(() => {
+        toast.hidden = true;
+      }, 4000);
+    }
+  }
+
+  function renderFilterOptions(): void {
     const current = filterFolder.value;
     filterFolder.replaceChildren();
     filterFolder.appendChild(new Option('All folders', ''));
-    filterFolder.appendChild(new Option('No folder', 'none'));
     for (const folder of folders) {
       filterFolder.appendChild(new Option(folder.name, folder.id));
     }
@@ -33,21 +45,22 @@
         : folder.name;
       folderList.appendChild(item);
     }
-     renderFilterOptions();
+    renderFilterOptions();
   }
 
   function buildCard(post: PostSummary): HTMLDivElement {
     const card = document.createElement('div');
-    card.style.cssText = 'border:1px solid #ccc; margin:12px 0; padding:8px; display:flex; gap:12px;';
+    card.className = 'post-card';
 
     if (post.screenshotUrl) {
       const img = document.createElement('img');
       img.src = post.screenshotUrl;
-      img.style.cssText = 'width:200px; align-self:flex-start;';
+      img.className = 'post-shot';
       card.appendChild(img);
     }
 
     const info = document.createElement('div');
+    info.className = 'post-info';
 
     const author = document.createElement('strong');
     author.textContent = '@' + post.authorHandle;
@@ -57,13 +70,12 @@
     text.textContent = post.text.slice(0, 200);
 
     const select = document.createElement('select');
-    select.appendChild(new Option('No folder', ''));
     for (const folder of folders) {
       const option = new Option(folder.name, folder.id);
       option.title = folder.description;
       select.appendChild(option);
     }
-    select.value = post.folderId ?? '';
+    select.value = post.folderId;
 
     const noteInput = document.createElement('input');
     noteInput.type = 'text';
@@ -72,16 +84,17 @@
     noteInput.value = post.note;
 
     const saveDetails = document.createElement('button');
+    saveDetails.className = 'btn';
     saveDetails.textContent = 'Save details';
 
     const detailsStatus = document.createElement('span');
 
     saveDetails.addEventListener('click', async () => {
       await window.api.savePostMeta(post.id, {
-        folderId: select.value || null,
+        folderId: select.value,
         note: noteInput.value.trim(),
       });
-            post.folderId = select.value || null;
+      post.folderId = select.value;
       post.note = noteInput.value.trim();
       detailsStatus.textContent = ' Saved';
     });
@@ -91,14 +104,13 @@
     return card;
   }
 
-    function showPosts(): void {
+  function showPosts(): void {
     const query = searchInput.value.trim().toLowerCase();
     const folderId = filterFolder.value;
     postList.replaceChildren();
 
     for (const post of allPosts) {
-      if (folderId === 'none' && post.folderId !== null) continue;
-      if (folderId && folderId !== 'none' && post.folderId !== folderId) continue;
+      if (folderId && post.folderId !== folderId) continue;
 
       const haystack = `${post.text} ${post.authorHandle} ${post.note}`.toLowerCase();
       if (query && !haystack.includes(query)) continue;
@@ -112,18 +124,27 @@
     showPosts();
   }
 
-  saveButton.addEventListener('click', async () => {
+  async function savePastedLink(): Promise<void> {
     const url = linkInput.value.trim();
     if (!url) {
-      statusText.textContent = 'Paste a link first.';
       return;
     }
-    statusText.textContent = 'Saving...';
+    saveButton.disabled = true;
+    showToast('Saving...', false, false);
     const result = await window.api.saveLink(url);
-    statusText.textContent = result.message;
+    showToast(result.message, !result.ok);
+    saveButton.disabled = false;
     if (result.ok) {
       linkInput.value = '';
       await renderPosts();
+    }
+    linkInput.focus();
+  }
+
+  saveButton.addEventListener('click', savePastedLink);
+  linkInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      savePastedLink();
     }
   });
 
@@ -136,8 +157,11 @@
     folderName.value = '';
     folderDesc.value = '';
     renderFolders();
-    await renderPosts(); // refresh so every dropdown has the new folder
+    showPosts(); // refresh so every dropdown has the new folder
   });
+
+  searchInput.addEventListener('input', showPosts);
+  filterFolder.addEventListener('change', showPosts);
 
   async function start(): Promise<void> {
     folders = await window.api.listFolders();
@@ -145,7 +169,5 @@
     await renderPosts();
   }
 
-    searchInput.addEventListener('input', showPosts);
-  filterFolder.addEventListener('change', showPosts);
   start();
 })();

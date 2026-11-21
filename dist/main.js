@@ -10,6 +10,7 @@ const storage_1 = require("./storage");
 const parseLink_1 = require("./parseLink");
 const media_1 = require("./media");
 const screenshot_1 = require("./screenshot");
+const archiveDir = () => node_path_1.default.join(electron_1.app.getPath('userData'), 'archive');
 function createWindow() {
     const win = new electron_1.BrowserWindow({
         width: 1000,
@@ -26,7 +27,7 @@ electron_1.ipcMain.handle('save-link', async (_event, url) => {
         return { ok: false, message: "That doesn't look like a tweet link." };
     }
     try {
-        const dataDir = node_path_1.default.join(electron_1.app.getPath('userData'), 'archive');
+        const dataDir = archiveDir();
         if (await (0, storage_1.isSaved)(dataDir, parsed.tweetId)) {
             return { ok: true, message: 'Already saved.' };
         }
@@ -47,12 +48,12 @@ electron_1.ipcMain.handle('save-link', async (_event, url) => {
         return { ok: false, message: 'Unexpected error while fetching.' };
     }
 });
-electron_1.ipcMain.handle('list-posts', async () => {
-    return (0, storage_1.listPosts)(node_path_1.default.join(electron_1.app.getPath('userData'), 'archive'));
-});
-const archiveDir = () => node_path_1.default.join(electron_1.app.getPath('userData'), 'archive');
+electron_1.ipcMain.handle('list-posts', () => (0, storage_1.listPosts)(archiveDir()));
 electron_1.ipcMain.handle('list-folders', () => (0, storage_1.listFolders)(archiveDir()));
-electron_1.ipcMain.handle('add-folder', (_event, name, description) => (0, storage_1.addFolder)(archiveDir(), name.trim(), description.trim()));
+electron_1.ipcMain.handle('list-folder-summaries', () => (0, storage_1.listFolderSummaries)(archiveDir()));
+electron_1.ipcMain.handle('list-posts-in-folder', (_event, folderId) => (0, storage_1.listPostsInFolder)(archiveDir(), folderId));
+electron_1.ipcMain.handle('get-post', (_event, tweetId) => (0, storage_1.getPost)(archiveDir(), tweetId));
+electron_1.ipcMain.handle('add-folder', (_event, name, description, color) => (0, storage_1.addFolder)(archiveDir(), name.trim(), description.trim(), color));
 electron_1.ipcMain.handle('save-post-meta', (_event, tweetId, meta) => (0, storage_1.savePostMeta)(archiveDir(), tweetId, meta));
 electron_1.app.whenReady().then(() => {
     createWindow();

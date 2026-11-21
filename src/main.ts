@@ -1,10 +1,22 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import { fetchTweet, FetchError } from './fetcher';
-import { addFolder, isSaved, listFolders, listPosts, savePostMeta, saveTweet } from './storage';
+import {
+  addFolder,
+  getPost,
+  isSaved,
+  listFolders,
+  listFolderSummaries,
+  listPosts,
+  listPostsInFolder,
+  savePostMeta,
+  saveTweet,
+} from './storage';
 import { parseTweetLink } from './parseLink';
 import { downloadMedia } from './media';
 import { takeScreenshot } from './screenshot';
+
+const archiveDir = () => path.join(app.getPath('userData'), 'archive');
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -25,7 +37,7 @@ ipcMain.handle('save-link', async (_event, url: string): Promise<SaveResult> => 
   }
 
   try {
-    const dataDir = path.join(app.getPath('userData'), 'archive');
+    const dataDir = archiveDir();
 
     if (await isSaved(dataDir, parsed.tweetId)) {
       return { ok: true, message: 'Already saved.' };
@@ -48,16 +60,20 @@ ipcMain.handle('save-link', async (_event, url: string): Promise<SaveResult> => 
   }
 });
 
-ipcMain.handle('list-posts', async (): Promise<PostSummary[]> => {
-  return listPosts(path.join(app.getPath('userData'), 'archive'));
-});
-
-const archiveDir = () => path.join(app.getPath('userData'), 'archive');
+ipcMain.handle('list-posts', () => listPosts(archiveDir()));
 
 ipcMain.handle('list-folders', () => listFolders(archiveDir()));
 
-ipcMain.handle('add-folder', (_event, name: string, description: string) =>
-  addFolder(archiveDir(), name.trim(), description.trim()),
+ipcMain.handle('list-folder-summaries', () => listFolderSummaries(archiveDir()));
+
+ipcMain.handle('list-posts-in-folder', (_event, folderId: string) =>
+  listPostsInFolder(archiveDir(), folderId),
+);
+
+ipcMain.handle('get-post', (_event, tweetId: string) => getPost(archiveDir(), tweetId));
+
+ipcMain.handle('add-folder', (_event, name: string, description: string, color?: string) =>
+  addFolder(archiveDir(), name.trim(), description.trim(), color),
 );
 
 ipcMain.handle('save-post-meta', (_event, tweetId: string, meta: PostMeta) =>

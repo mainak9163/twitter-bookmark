@@ -2,22 +2,48 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file: data:"
+    />
+    <title>Tweet Archive</title>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <h1>Tweet Archive</h1>
-    <input id="link-input" type="text" size="60" placeholder="Paste a tweet link" />
-    <button id="save-button">Save</button>
-    <p id="status-text"></p>
-        <h3>Folders</h3>
-    <input id="folder-name" type="text" placeholder="Folder name" />
-    <input id="folder-desc" type="text" size="50" placeholder="What kind of posts go here?" />
-    <button id="add-folder-button">Add folder</button>
-    <ul id="folder-list"></ul>
-        <h3>Posts</h3>
-    <input id="search-input" type="text" size="40" placeholder="Search text, author, notes" />
-    <select id="filter-folder"></select>
-        <div id="post-list"></div>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <span class="brand">Tweet Archive</span>
+        <input
+          id="link-input"
+          class="paste-input"
+          type="text"
+          placeholder="Paste a tweet link and press Enter"
+          autofocus
+        />
+        <button id="save-button" class="btn btn-primary">Save</button>
+      </div>
+    </header>
+
+    <nav class="breadcrumb" id="breadcrumb">Home</nav>
+
+    <main class="content">
+      <h3>Folders</h3>
+      <div class="row">
+        <input id="folder-name" type="text" placeholder="Folder name" />
+        <input id="folder-desc" type="text" size="40" placeholder="What kind of posts go here?" />
+        <button id="add-folder-button" class="btn">Add folder</button>
+      </div>
+      <ul id="folder-list"></ul>
+
+      <h3>Posts</h3>
+      <div class="row">
+        <input id="search-input" type="text" size="40" placeholder="Search text, author, notes" />
+        <select id="filter-folder"></select>
+      </div>
+      <div id="post-list" class="post-list"></div>
+    </main>
+
+    <div id="toast" class="toast" hidden></div>
 
     <script src="../dist/renderer.js"></script>
   </body>
