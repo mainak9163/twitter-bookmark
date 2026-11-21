@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform, // for title-bar spacing (macOS traffic lights sit on the left)
+  setTitleBarTint: (tint: 'none' | 'dim' | 'dark'): void => ipcRenderer.send('set-title-bar-tint', tint),
   saveLink: (url: string): Promise<SaveResult> => ipcRenderer.invoke('save-link', url),
   listPosts: (): Promise<PostSummary[]> => ipcRenderer.invoke('list-posts'),
   listFolders: (): Promise<Folder[]> => ipcRenderer.invoke('list-folders'),
@@ -12,6 +14,13 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('get-post', tweetId),
   addFolder: (name: string, description: string, color?: string): Promise<Folder[]> =>
     ipcRenderer.invoke('add-folder', name, description, color),
+  updateFolder: (id: string, changes: FolderChanges): Promise<Folder[]> =>
+    ipcRenderer.invoke('update-folder', id, changes),
+  deleteFolder: (id: string): Promise<Folder[]> => ipcRenderer.invoke('delete-folder', id),
+  trashPost: (tweetId: string): Promise<void> => ipcRenderer.invoke('trash-post', tweetId),
+  restorePost: (tweetId: string): Promise<void> => ipcRenderer.invoke('restore-post', tweetId),
+  purgeTrash: (tweetId: string): Promise<void> => ipcRenderer.invoke('purge-trash', tweetId),
+  copyText: (text: string): void => ipcRenderer.send('copy-text', text),
   savePostMeta: (tweetId: string, meta: PostMeta): Promise<void> =>
     ipcRenderer.invoke('save-post-meta', tweetId, meta),
 });

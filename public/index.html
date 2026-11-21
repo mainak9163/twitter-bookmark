@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' file: data:"
+      content="default-src 'self'; img-src 'self' file: data:; media-src 'self' file:"
     />
     <title>Tweet Archive</title>
     <link rel="stylesheet" href="styles.css" />
@@ -12,38 +12,36 @@
   <body>
     <header class="topbar">
       <div class="topbar-inner">
-        <span class="brand">Tweet Archive</span>
-        <input
-          id="link-input"
-          class="paste-input"
-          type="text"
-          placeholder="Paste a tweet link and press Enter"
-          autofocus
-        />
-        <button id="save-button" class="btn btn-primary">Save</button>
+        <a class="brand" href="#/">
+          <img class="brand-mark" src="icon.svg" alt="" width="22" height="22" />
+          Tweet Archive
+        </a>
+        <form id="save-form" class="save-form">
+          <div class="paste-field">
+            <input
+              id="link-input"
+              class="paste-input"
+              type="text"
+              placeholder="Paste a tweet link to save it"
+              spellcheck="false"
+              autocomplete="off"
+              aria-describedby="paste-hint"
+            />
+            <span class="paste-hint" id="paste-hint" title="Paste a link anywhere in the app to save it">
+              <kbd>Ctrl</kbd><kbd>V</kbd> anywhere
+            </span>
+          </div>
+          <button id="save-button" class="btn btn-primary" type="submit">Save</button>
+        </form>
       </div>
     </header>
 
-    <nav class="breadcrumb" id="breadcrumb">Home</nav>
-
     <main class="content">
-      <h3>Folders</h3>
-      <div class="row">
-        <input id="folder-name" type="text" placeholder="Folder name" />
-        <input id="folder-desc" type="text" size="40" placeholder="What kind of posts go here?" />
-        <button id="add-folder-button" class="btn">Add folder</button>
-      </div>
-      <ul id="folder-list"></ul>
-
-      <h3>Posts</h3>
-      <div class="row">
-        <input id="search-input" type="text" size="40" placeholder="Search text, author, notes" />
-        <select id="filter-folder"></select>
-      </div>
-      <div id="post-list" class="post-list"></div>
+      <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb"></nav>
+      <div id="view"></div>
     </main>
 
-    <div id="toast" class="toast" hidden></div>
+    <div id="toast" class="toast" role="status" hidden></div>
 
     <script src="../dist/renderer.js"></script>
   </body>

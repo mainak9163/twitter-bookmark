@@ -1,6 +1,8 @@
 interface SaveResult {
   ok: boolean;
   message: string;
+  tweetId?: string; // set when ok
+  alreadySaved?: boolean;
 }
 
 interface Folder {
@@ -8,6 +10,12 @@ interface Folder {
   name: string;
   description: string;
   color: string; // one of the 8 folder colours, e.g. "#5CC08B"
+}
+
+interface FolderChanges {
+  name?: string;
+  description?: string;
+  color?: string;
 }
 
 // Folder card data for the Home screen.
@@ -32,6 +40,8 @@ interface PostSummary {
   savedAt: string;
   screenshotUrl: string | null;
   thumbUrl: string | null; // screenshot, else first saved photo
+  photoUrl: string | null; // first saved photo, if any
+  mediaTypes: string[]; // e.g. ["photo", "video"]
   folderId: string; // always a real folder id ("general" if unsorted)
   note: string;
 }
@@ -66,6 +76,8 @@ interface PostDetail extends QuotedPost {
 
 interface Window {
   api: {
+    platform: string;
+    setTitleBarTint(tint: 'none' | 'dim' | 'dark'): void;
     saveLink(url: string): Promise<SaveResult>;
     listPosts(): Promise<PostSummary[]>;
     listFolders(): Promise<Folder[]>;
@@ -73,6 +85,12 @@ interface Window {
     listPostsInFolder(folderId: string): Promise<PostSummary[]>;
     getPost(tweetId: string): Promise<PostDetail | null>;
     addFolder(name: string, description: string, color?: string): Promise<Folder[]>;
+    updateFolder(id: string, changes: FolderChanges): Promise<Folder[]>;
+    deleteFolder(id: string): Promise<Folder[]>;
+    trashPost(tweetId: string): Promise<void>;
+    restorePost(tweetId: string): Promise<void>;
+    purgeTrash(tweetId: string): Promise<void>;
+    copyText(text: string): void;
     savePostMeta(tweetId: string, meta: PostMeta): Promise<void>;
   };
 }

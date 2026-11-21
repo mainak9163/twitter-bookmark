@@ -14,8 +14,8 @@ export const FOLDER_COLORS = [
 // Built-in folder for unsorted posts. Not stored in folders.json.
 const GENERAL_FOLDER: Folder = {
   id: GENERAL_ID,
-  name: 'General',
-  description: 'Posts not sorted into a folder yet',
+  name: 'Inbox',
+  description: 'Saved posts that are not in a folder yet',
   color: '#9AA3B2',
 };
 
@@ -90,10 +90,60 @@ export async function addFolder(
         ? color
         : FOLDER_COLORS[folders.length % FOLDER_COLORS.length];
     folders.push({ id: randomUUID(), name, description, color: safeColor });
-    await fs.mkdir(dataDir, { recursive: true });
-    await fs.writeFile(path.join(dataDir, 'folders.json'), JSON.stringify(folders, null, 2), 'utf8');
+    await writeUserFolders(dataDir, folders);
   }
   return [GENERAL_FOLDER, ...folders];
+}
+
+async function writeUserFolders(dataDir: string, folders: Folder[]): Promise<void> {
+  await fs.mkdir(dataDir, { recursive: true });
+  await fs.writeFile(path.join(dataDir, 'folders.json'), JSON.stringify(folders, null, 2), 'utf8');
+}
+
+// Change a folder's name, description or colour. Inbox can't be edited.
+export async function updateFolder(
+  dataDir: string,
+  id: string,
+  changes: { name?: string; description?: string; color?: string },
+): Promise<Folder[]> {
+  const folders = await readUserFolders(dataDir);
+  const folder = folders.find((f) => f.id === id);
+  if (folder) {
+    const name = changes.name?.trim();
+    if (name) folder.name = name.slice(0, 60);
+    if (changes.description !== undefined) folder.description = changes.description.trim().slice(0, 140);
+    if (changes.color && FOLDER_COLORS.includes(changes.color)) folder.color = changes.color;
+    await writeUserFolders(dataDir, folders);
+  }
+  return [GENERAL_FOLDER, ...folders];
+}
+
+// Delete a folder. Its posts go back to Inbox; no post is deleted.
+export async function deleteFolder(dataDir: string, id: string): Promise<Folder[]> {
+  const folders = await readUserFolders(dataDir);
+  const remaining = folders.filter((f) => f.id !== id);
+  if (remaining.length !== folders.length) {
+    await writeUserFolders(dataDir, remaining);
+    // Clear the old folder id from each post so nothing points at a deleted folder.
+    let ids: string[] = [];
+    try {
+      ids = await fs.readdir(path.join(dataDir, 'posts'));
+    } catch {
+      // no posts yet
+    }
+    for (const postId of ids) {
+      const folder = path.join(dataDir, 'posts', postId);
+      const meta = await readMeta(folder);
+      if (meta.folderId === id) {
+        await fs.writeFile(
+          path.join(folder, 'meta.json'),
+          JSON.stringify({ ...meta, folderId: null }, null, 2),
+          'utf8',
+        );
+      }
+    }
+  }
+  return [GENERAL_FOLDER, ...remaining];
 }
 
 // ---------- Posts ----------
@@ -146,6 +196,8 @@ export async function listPosts(dataDir: string): Promise<PostSummary[]> {
         savedAt: stat.mtime.toISOString(),
         screenshotUrl,
         thumbUrl: screenshotUrl ?? photoUrl,
+        photoUrl,
+        mediaTypes: tweet.media.map((m) => m.type),
         folderId,
         note: meta.note,
       });
@@ -225,6 +277,44 @@ export async function getPost(dataDir: string, tweetId: string): Promise<PostDet
     };
   } catch {
     return null;
+  }
+}
+
+// ---------- Deleting posts (with a short undo window) ----------
+// Deleting moves the post's folder to archive/.trash/<id>. Undo moves it back.
+// Trash is emptied per post when the undo window ends, and fully on app start.
+
+const trashDir = (dataDir: string) => path.join(dataDir, '.trash');
+
+export async function trashPost(dataDir: string, tweetId: string): Promise<void> {
+  checkTweetId(tweetId);
+  const to = path.join(trashDir(dataDir), tweetId);
+  await fs.mkdir(trashDir(dataDir), { recursive: true });
+  await fs.rm(to, { recursive: true, force: true }); // leftover from an earlier delete
+  await fs.rename(postFolder(dataDir, tweetId), to);
+}
+
+export async function restorePost(dataDir: string, tweetId: string): Promise<void> {
+  checkTweetId(tweetId);
+  const from = path.join(trashDir(dataDir), tweetId);
+  const to = postFolder(dataDir, tweetId);
+  if (await isSaved(dataDir, tweetId)) {
+    // Saved again in the meantime: keep the newer copy.
+    await fs.rm(from, { recursive: true, force: true });
+    return;
+  }
+  await fs.mkdir(path.dirname(to), { recursive: true });
+  await fs.rm(to, { recursive: true, force: true }); // a half-written folder without post.json
+  await fs.rename(from, to);
+}
+
+// Permanently delete one trashed post, or everything in the trash.
+export async function purgeTrash(dataDir: string, tweetId?: string): Promise<void> {
+  if (tweetId !== undefined) {
+    checkTweetId(tweetId);
+    await fs.rm(path.join(trashDir(dataDir), tweetId), { recursive: true, force: true });
+  } else {
+    await fs.rm(trashDir(dataDir), { recursive: true, force: true });
   }
 }
 
